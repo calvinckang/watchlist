@@ -22,4 +22,4 @@
 	<button>Login</button>
 	<button formaction="?/signUpEmail">Register</button>
 </form>
-<p style="color: red">{form?.message ?? ''}</p>
+<p class="form-message">{form?.message ?? ''}</p>

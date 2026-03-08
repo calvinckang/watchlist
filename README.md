@@ -1,32 +1,56 @@
-# sv
+# Watchlist
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A minimal app to log movies you want to watch. Built with SvelteKit, Drizzle, and Better Auth.
 
-## Creating a project
+- **Login / register** at `/login`
+- **Watchlist** at `/` (add movies by title, sign out)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Database migrations
+
+We use **migrations only** (never `db:push`), including for local dev, because the app connects to the live database. Pushing would change the live schema directly and skip migration history.
+
+### Applying schema changes (run these yourself)
+
+**1. Generate a migration**
+
+From the project root, with `DATABASE_URL` available (e.g. in `.env`):
 
 ```sh
-# create a new project
-npx sv create my-app
+pnpm run db:generate
 ```
 
-To recreate this project with the same configuration:
+- If Drizzle asks for a **migration name**, type a short slug (e.g. `add_movie_table`) and press Enter. If you don’t care about the name, you can press Enter to accept the default.
+- If it asks about **renames** (e.g. “table X was removed and table Y was added – is this a rename?”), choose **No** so it generates a drop and a create instead of renaming. That keeps the migration correct for “drop task, add movie” style changes.
+
+Generated files will appear under `drizzle/` (e.g. a new folder with `migration.sql` and `snapshot.json`).
+
+**2. Review the SQL**
+
+Open the new `drizzle/<folder>/migration.sql` and confirm it does what you expect (e.g. `DROP TABLE "task"`, `CREATE TABLE "movie"`). Fix the schema in `src/lib/server/db/schema.ts` and run `db:generate` again if needed.
+
+**3. Apply the migration**
+
+When the SQL looks good:
 
 ```sh
-# recreate this project
-pnpm dlx sv@0.12.5 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright sveltekit-adapter="adapter:netlify" drizzle="database:postgresql+postgresql:neon" better-auth="demo:password" --install pnpm .
+pnpm run db:migrate
 ```
+
+- This connects to the database using `DATABASE_URL` and runs any migrations that haven’t been applied yet. There is no confirmation prompt; it just runs. So reviewing the SQL in step 2 is important.
+
+Applied migrations are recorded in the `__drizzle_migrations` table in your database.
+
+---
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Once you've created a project and installed dependencies with `pnpm install`, start a development server:
 
 ```sh
-npm run dev
+pnpm run dev
 
 # or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm run dev -- --open
 ```
 
 ## Building
@@ -34,9 +58,9 @@ npm run dev -- --open
 To create a production version of your app:
 
 ```sh
-npm run build
+pnpm run build
 ```
 
-You can preview the production build with `npm run preview`.
+You can preview the production build with `pnpm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
