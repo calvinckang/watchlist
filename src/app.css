@@ -120,9 +120,26 @@
 	--color-button-secondary-hover: #94a3b8;
 }
 
+html {
+	background-color: var(--color-bg);
+}
+
+/* Single fixed background layer to avoid top/bottom color mismatch in dark mode */
+html::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	background-color: var(--color-bg);
+	z-index: -1;
+}
+
 body {
 	margin: 0;
 	padding: 0;
+	min-height: 100vh;
+}
+
+.app-bg {
 	min-height: 100vh;
 }
 

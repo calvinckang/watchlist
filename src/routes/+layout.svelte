@@ -9,6 +9,8 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<main class="app">
-	{@render children()}
-</main>
+<div class="app-bg">
+	<main class="app">
+		{@render children()}
+	</main>
+</div>

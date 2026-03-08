@@ -1,6 +1,27 @@
 <script lang="ts">
 	import { enhance, deserialize, applyAction } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { cubicOut } from 'svelte/easing';
+	import type { TransitionConfig } from 'svelte/transition';
+
+	function slideFade(
+		node: HTMLElement,
+		{ duration = 250 }: { duration?: number } = {}
+	): TransitionConfig {
+		const style = getComputedStyle(node);
+		const opacity = +style.opacity;
+		const height = parseFloat(style.height);
+		const paddingTop = parseFloat(style.paddingTop);
+		const paddingBottom = parseFloat(style.paddingBottom);
+		const marginTop = parseFloat(style.marginTop);
+		const marginBottom = parseFloat(style.marginBottom);
+		return {
+			duration,
+			easing: cubicOut,
+			css: (t) =>
+				`opacity: ${t * opacity}; height: ${t * height}px; padding-top: ${t * paddingTop}px; padding-bottom: ${t * paddingBottom}px; margin-top: ${t * marginTop}px; margin-bottom: ${t * marginBottom}px; overflow: hidden;`
+		};
+	}
 	import { Trash2, Sun, Moon } from '@lucide/svelte';
 	import { getTheme, toggleTheme } from '$lib/theme';
 	import type { ActionData, PageData } from './$types';
@@ -157,8 +178,8 @@
 {/if}
 
 <ul class="movie-list">
-	{#each data.movies as m}
-		<li>
+	{#each data.movies as m (m.id)}
+		<li out:slideFade={{ duration: 250 }}>
 			<span>{m.title}</span>
 			<button type="button" class="remove-btn" aria-label="Remove {m.title}" onclick={() => removeMovie(m.id)}><Trash2 size={18} /></button>
 		</li>
