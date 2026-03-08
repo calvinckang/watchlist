@@ -1,10 +1,24 @@
 <script lang="ts">
 	import { enhance, deserialize, applyAction } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { Trash2 } from '@lucide/svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let titleInput: HTMLInputElement | undefined = $state();
+
+	async function removeMovie(id: number) {
+		const formData = new FormData();
+		formData.set('id', id.toString());
+		const response = await fetch(new URL('?/removeMovie', $page.url.href).href, {
+			method: 'POST',
+			body: formData
+		});
+		const result = deserialize(await response.text());
+		await applyAction(result);
+		await invalidateAll();
+	}
 
 	async function handleAddSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -45,8 +59,11 @@
 	<p class="form-message">{form.message}</p>
 {/if}
 
-<ul>
+<ul class="movie-list">
 	{#each data.movies as m}
-		<li>{m.title}</li>
+		<li>
+			<span>{m.title}</span>
+			<button type="button" class="remove-btn" aria-label="Remove {m.title}" onclick={() => removeMovie(m.id)}><Trash2 size={18} /></button>
+		</li>
 	{/each}
 </ul>

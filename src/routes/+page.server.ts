@@ -4,7 +4,7 @@ import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { movie } from '$lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -32,6 +32,20 @@ export const actions: Actions = {
 			userId: event.locals.user.id,
 			title
 		});
+	},
+	removeMovie: async (event) => {
+		if (!event.locals.user) {
+			return redirect(302, '/login');
+		}
+		const formData = await event.request.formData();
+		const id = formData.get('id');
+		const parsed = typeof id === 'string' ? parseInt(id, 10) : NaN;
+		if (Number.isNaN(parsed) || parsed < 1) {
+			return fail(400, { message: 'Invalid movie' });
+		}
+		await db
+			.delete(movie)
+			.where(and(eq(movie.id, parsed), eq(movie.userId, event.locals.user!.id)));
 	},
 	signOut: async (event) => {
 		await auth.api.signOut({
