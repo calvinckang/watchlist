@@ -3,7 +3,7 @@ import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { movie } from '$lib/server/db/schema';
+import { movie, user } from '$lib/server/db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -15,7 +15,7 @@ export const load: PageServerLoad = async (event) => {
 		.from(movie)
 		.where(eq(movie.userId, event.locals.user.id))
 		.orderBy(desc(movie.createdAt));
-	return { movies };
+	return { movies, user: event.locals.user };
 };
 
 export const actions: Actions = {
@@ -52,5 +52,13 @@ export const actions: Actions = {
 			headers: event.request.headers
 		});
 		return redirect(302, '/login');
+	},
+	updateAvatar: async (event) => {
+		if (!event.locals.user) {
+			return redirect(302, '/login');
+		}
+		const formData = await event.request.formData();
+		const emoji = formData.get('emoji')?.toString()?.trim();
+		await db.update(user).set({ image: emoji || null }).where(eq(user.id, event.locals.user.id));
 	}
 };
