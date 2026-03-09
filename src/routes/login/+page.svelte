@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Sun, Moon } from '@lucide/svelte';
+	import { Sun, Moon, Popcorn } from '@lucide/svelte';
 	import { getTheme, toggleTheme } from '$lib/theme';
 	import type { ActionData } from './$types';
 
@@ -19,25 +19,30 @@
 	});
 </script>
 
+<header class="page-header">
+	<div class="page-title">
+		<Popcorn size={24} strokeWidth={2.5} class="page-title-icon" />
+		<h1>Watchlist</h1>
+	</div>
+	<div class="header-actions">
+		<button
+			type="button"
+			class="theme-toggle"
+			onclick={handleThemeToggle}
+			aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+		>
+			{#if theme === 'dark'}
+				<Sun size={18} />
+			{:else}
+				<Moon size={18} />
+			{/if}
+		</button>
+	</div>
+</header>
+
 {#if showSignUp}
-	<header class="page-header">
-		<h1>Sign up</h1>
-		<div class="header-actions">
-			<button
-				type="button"
-				class="theme-toggle"
-				onclick={handleThemeToggle}
-				aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-			>
-				{#if theme === 'dark'}
-					<Sun size={18} />
-				{:else}
-					<Moon size={18} />
-				{/if}
-			</button>
-		</div>
-	</header>
-	<form method="post" action="?/signUpEmail" use:enhance>
+	<form method="post" action="?/signUpEmail" use:enhance class="auth-form">
+		<h2 class="auth-form-title">Sign up</h2>
 		<label>
 			Email
 			<input type="email" name="email" required />
@@ -55,26 +60,10 @@
 		{/if}
 		<button type="submit">Sign up</button>
 	</form>
-	<p class="form-switch">Already have an account? <button type="button" class="link-btn" onclick={() => (showSignUp = false)}>Sign in</button></p>
+	<p class="form-switch auth-form-switch">Already have an account? <button type="button" class="link-btn" onclick={() => (showSignUp = false)}>Sign in</button></p>
 {:else}
-	<header class="page-header">
-		<h1>Sign in</h1>
-		<div class="header-actions">
-			<button
-				type="button"
-				class="theme-toggle"
-				onclick={handleThemeToggle}
-				aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-			>
-				{#if theme === 'dark'}
-					<Sun size={18} />
-				{:else}
-					<Moon size={18} />
-				{/if}
-			</button>
-		</div>
-	</header>
-	<form method="post" action="?/signInEmail" use:enhance>
+	<form method="post" action="?/signInEmail" use:enhance class="auth-form">
+		<h2 class="auth-form-title">Sign in</h2>
 		<label>
 			Email
 			<input type="email" name="email" required />
@@ -88,5 +77,5 @@
 		{/if}
 		<button type="submit">Sign in</button>
 	</form>
-	<p class="form-switch">Don't have an account? <button type="button" class="link-btn" onclick={() => (showSignUp = true)}>Sign up</button></p>
+	<p class="form-switch auth-form-switch">Don't have an account? <button type="button" class="link-btn" onclick={() => (showSignUp = true)}>Sign up</button></p>
 {/if}

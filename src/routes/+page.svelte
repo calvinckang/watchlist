@@ -17,6 +17,7 @@
 	let emojiPickerOpen = $state(false);
 	let popoverContainer: HTMLDivElement;
 	let searchContainer: HTMLDivElement;
+	let scrolled = $state(false);
 	let theme = $state<'light' | 'dark'>(getTheme());
 
 	function handleThemeToggle() {
@@ -54,6 +55,15 @@
 		}
 	});
 
+	$effect(() => {
+		const handler = () => {
+			scrolled = window.scrollY > 4;
+		};
+		window.addEventListener('scroll', handler, { passive: true });
+		handler();
+		return () => window.removeEventListener('scroll', handler);
+	});
+
 	async function fetchSearchResults() {
 		const q = searchQuery.trim();
 		if (!q) {
@@ -75,6 +85,11 @@
 	function onSearchInput() {
 		clearTimeout(searchDebounceTimer);
 		searchDebounceTimer = setTimeout(fetchSearchResults, 300);
+	}
+
+	function clearSearch() {
+		searchQuery = '';
+		searchResults = [];
 	}
 
 	async function setAvatar(emoji: string) {
@@ -131,12 +146,13 @@
 	}
 </script>
 
-<header class="page-header">
-	<div class="page-title">
-		<Popcorn size={24} class="page-title-icon" />
-		<h1>Watchlist</h1>
-	</div>
-	<div class="header-actions">
+<div class="sticky-top" class:scrolled>
+	<header class="page-header">
+		<div class="page-title">
+			<Popcorn size={24} strokeWidth={2.5} class="page-title-icon" />
+			<h1>Watchlist</h1>
+		</div>
+		<div class="header-actions">
 		<button
 			type="button"
 			class="theme-toggle"
@@ -185,20 +201,32 @@
 			{/if}
 		</div>
 	</div>
-</header>
+	</header>
 
-<div class="search-wrap" bind:this={searchContainer}>
-	<input
-		id="movie-search"
-		type="text"
-		placeholder="Search for a movie..."
-		bind:value={searchQuery}
-		oninput={onSearchInput}
-	/>
-	{#if searchLoading}
-		<p class="search-status">Searching...</p>
-	{:else if searchQuery.trim() && !searchLoading}
-		<div class="search-results">
+	<div class="search-wrap" bind:this={searchContainer}>
+		<div class="search-input-wrap">
+			<input
+				id="movie-search"
+				type="text"
+				placeholder="Add a movie..."
+				bind:value={searchQuery}
+				oninput={onSearchInput}
+				class:has-value={searchQuery.length > 0}
+			/>
+			{#if searchQuery.length > 0}
+				<button
+					type="button"
+					class="search-clear-btn"
+					onclick={clearSearch}
+					aria-label="Clear search"
+				>
+					<X size={18} />
+				</button>
+			{/if}
+			{#if searchLoading}
+				<p class="search-status">Searching...</p>
+			{:else if searchQuery.trim() && !searchLoading}
+				<div class="search-results">
 			{#if searchResults.length === 0}
 				<p class="search-status">No movies found</p>
 			{:else}
@@ -228,8 +256,10 @@
 					</button>
 				{/each}
 			{/if}
+				</div>
+			{/if}
 		</div>
-	{/if}
+	</div>
 </div>
 {#if form?.message}
 	<p class="form-message">{form.message}</p>
@@ -237,7 +267,7 @@
 
 <ul class="movie-list movie-list-cards">
 	{#each data.movies as m (m.id)}
-		<li class="movie-card" in:fade={{ duration: 250 }} out:fade={{ duration: 250 }}>
+		<li class="movie-card" in:fade={{ duration: 120 }} out:fade={{ duration: 120 }}>
 			<div class="movie-card-poster-wrap">
 				{#if m.posterPath}
 					<img
