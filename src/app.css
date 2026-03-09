@@ -158,6 +158,11 @@ body {
 	padding: 2rem 1.25rem;
 }
 
+/* Sign in / Sign up pages – narrower max-width */
+.app.auth-pages {
+	max-width: 36rem; /* 52rem - 16rem */
+}
+
 .page-header {
 	display: flex;
 	align-items: center;
