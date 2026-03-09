@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
 
 export const movie = pgTable('movie', {
@@ -9,6 +9,8 @@ export const movie = pgTable('movie', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	title: text('title').notNull(),
 	posterPath: text('poster_path'),
+	watched: boolean('watched').default(false).notNull(),
+	pinned: boolean('pinned').default(false).notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
 

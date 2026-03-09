@@ -2,7 +2,7 @@
 	import { enhance, deserialize, applyAction } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { fade } from 'svelte/transition';
-	import { X, Sun, Moon, Film, Popcorn } from '@lucide/svelte';
+	import { X, Sun, Moon, Film, Popcorn, Pin, Check, Trash2, MoreVertical } from '@lucide/svelte';
 	import { getTheme, toggleTheme } from '$lib/theme';
 	import type { ActionData, PageData } from './$types';
 
@@ -19,6 +19,7 @@
 	let searchContainer: HTMLDivElement;
 	let scrolled = $state(false);
 	let theme = $state<'light' | 'dark'>(getTheme());
+	let openMenuId = $state<number | null>(null);
 
 	function handleThemeToggle() {
 		theme = toggleTheme();
@@ -45,10 +46,13 @@
 		if (searchContainer && !searchContainer.contains(e.target as Node)) {
 			searchResults = [];
 		}
+		if (openMenuId !== null && !(e.target as Element).closest('[data-card-menu-container]')) {
+			openMenuId = null;
+		}
 	}
 
 	$effect(() => {
-		if (popoverOpen || searchResults.length > 0) {
+		if (popoverOpen || searchResults.length > 0 || openMenuId !== null) {
 			const handler = (e: MouseEvent) => handleClickOutside(e);
 			document.addEventListener('click', handler);
 			return () => document.removeEventListener('click', handler);
@@ -107,6 +111,7 @@
 	}
 
 	async function removeMovie(id: number) {
+		openMenuId = null;
 		const formData = new FormData();
 		formData.set('id', id.toString());
 		const response = await fetch('?/removeMovie', {
@@ -118,6 +123,40 @@
 		const result = deserialize(await response.text());
 		await applyAction(result);
 		await invalidateAll();
+	}
+
+	async function toggleWatched(id: number) {
+		openMenuId = null;
+		const formData = new FormData();
+		formData.set('id', id.toString());
+		const response = await fetch('?/toggleWatched', {
+			method: 'POST',
+			headers: { 'x-sveltekit-action': 'true' },
+			credentials: 'include',
+			body: formData
+		});
+		const result = deserialize(await response.text());
+		await applyAction(result);
+		await invalidateAll();
+	}
+
+	async function togglePin(id: number) {
+		openMenuId = null;
+		const formData = new FormData();
+		formData.set('id', id.toString());
+		const response = await fetch('?/togglePin', {
+			method: 'POST',
+			headers: { 'x-sveltekit-action': 'true' },
+			credentials: 'include',
+			body: formData
+		});
+		const result = deserialize(await response.text());
+		await applyAction(result);
+		await invalidateAll();
+	}
+
+	function toggleCardMenu(id: number) {
+		openMenuId = openMenuId === id ? null : id;
 	}
 
 	async function addMovieFromSearch(movie: { title: string; poster_path: string | null }) {
@@ -267,7 +306,7 @@
 
 <ul class="movie-list movie-list-cards">
 	{#each data.movies as m (m.id)}
-		<li class="movie-card" in:fade={{ duration: 120 }} out:fade={{ duration: 120 }}>
+		<li class="movie-card" class:menu-open={openMenuId === m.id} in:fade={{ duration: 120 }} out:fade={{ duration: 120 }}>
 			<div class="movie-card-poster-wrap">
 				{#if m.posterPath}
 					<img
@@ -278,9 +317,52 @@
 				{:else}
 					<span class="movie-card-poster-placeholder" aria-hidden="true"><Film size={32} /></span>
 				{/if}
-				<button type="button" class="remove-btn" aria-label="Remove {m.title}" onclick={() => removeMovie(m.id)}><X size={14} /></button>
+				{#if m.watched || m.pinned}
+					<div class="movie-card-poster-badges" aria-hidden="true">
+						{#if m.watched}
+							<span class="movie-card-badge-icon movie-card-badge-icon--watched"><Check size={14} /></span>
+						{/if}
+						{#if m.pinned}
+							<span class="movie-card-badge-icon movie-card-badge-icon--pinned"><Pin size={14} /></span>
+						{/if}
+					</div>
+				{/if}
+				<div class="movie-card-poster-actions" aria-hidden="false">
+					<button
+						type="button"
+						class="movie-card-poster-action-btn"
+						onclick={(e) => {
+							e.stopPropagation();
+							toggleWatched(m.id);
+						}}
+					>
+						{m.watched ? 'Mark unwatched' : 'Mark watched'}
+					</button>
+					<button
+						type="button"
+						class="movie-card-poster-action-btn"
+						onclick={(e) => {
+							e.stopPropagation();
+							togglePin(m.id);
+						}}
+					>
+						{m.pinned ? 'Unpin' : 'Pin'}
+					</button>
+					<button
+						type="button"
+						class="movie-card-poster-action-btn movie-card-poster-action-btn-delete"
+						onclick={(e) => {
+							e.stopPropagation();
+							removeMovie(m.id);
+						}}
+					>
+						Delete
+					</button>
+				</div>
 			</div>
-			<span class="movie-card-title">{m.title}</span>
+			<div class="movie-card-title-row">
+				<span class="movie-card-title">{m.title}</span>
+			</div>
 		</li>
 	{/each}
 </ul>
