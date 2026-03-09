@@ -1,9 +1,9 @@
 # Watchlist
 
-A minimal app to log movies you want to watch. Built with SvelteKit, Drizzle, and Better Auth.
+A minimal app to log movies you want to watch. Built with SvelteKit, Drizzle, Better Auth, and TMDB.
 
 - **Login / register** at `/login`
-- **Watchlist** at `/` (add movies by title, sign out)
+- **Watchlist** at `/` (search TMDB, add movies with posters, sign out)
 
 ## Database migrations
 
