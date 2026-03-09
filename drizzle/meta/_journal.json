@@ -15,6 +15,13 @@
       "when": 1772999534391,
       "tag": "0001_gifted_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773009999566,
+      "tag": "0002_blushing_bullseye",
+      "breakpoints": true
     }
   ]
 }

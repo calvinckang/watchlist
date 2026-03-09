@@ -5,16 +5,36 @@ import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { movie, user } from '$lib/server/db/schema';
 import { and, eq, desc } from 'drizzle-orm';
+import { searchMoviePoster, posterUrl } from '$lib/server/tmdb';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, '/login');
 	}
-	const movies = await db
+	const rows = await db
 		.select()
 		.from(movie)
 		.where(eq(movie.userId, event.locals.user.id))
 		.orderBy(desc(movie.createdAt));
+
+	const needsBackfill = rows.filter((r) => !r.posterPath);
+	const backfillPromises = needsBackfill.map(async (m) => {
+		const path = await searchMoviePoster(m.title);
+		if (path) {
+			await db.update(movie).set({ posterPath: path }).where(eq(movie.id, m.id));
+			return { ...m, posterPath: path };
+		}
+		return m;
+	});
+	const backfilled = await Promise.all(backfillPromises);
+	const backfillMap = new Map(backfilled.map((m) => [m.id, m.posterPath]));
+
+	const movies = rows.map((m) => ({
+		...m,
+		posterPath: m.posterPath ?? backfillMap.get(m.id) ?? null,
+		posterUrl: posterUrl(m.posterPath ?? backfillMap.get(m.id) ?? null)
+	}));
+
 	return { movies, user: event.locals.user };
 };
 
@@ -25,12 +45,14 @@ export const actions: Actions = {
 		}
 		const formData = await event.request.formData();
 		const title = formData.get('title')?.toString()?.trim() ?? '';
+		const posterPath = formData.get('poster_path')?.toString()?.trim() || null;
 		if (!title) {
 			return fail(400, { message: 'Title is required' });
 		}
 		await db.insert(movie).values({
 			userId: event.locals.user.id,
-			title
+			title,
+			posterPath
 		});
 	},
 	removeMovie: async (event) => {

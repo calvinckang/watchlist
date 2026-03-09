@@ -8,6 +8,7 @@ export const movie = pgTable('movie', {
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
 	title: text('title').notNull(),
+	posterPath: text('poster_path'),
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
 

@@ -1,36 +1,22 @@
 <script lang="ts">
 	import { enhance, deserialize, applyAction } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { cubicOut } from 'svelte/easing';
-	import type { TransitionConfig } from 'svelte/transition';
-
-	function slideFade(
-		node: HTMLElement,
-		{ duration = 250 }: { duration?: number } = {}
-	): TransitionConfig {
-		const style = getComputedStyle(node);
-		const opacity = +style.opacity;
-		const height = parseFloat(style.height);
-		const paddingTop = parseFloat(style.paddingTop);
-		const paddingBottom = parseFloat(style.paddingBottom);
-		const marginTop = parseFloat(style.marginTop);
-		const marginBottom = parseFloat(style.marginBottom);
-		return {
-			duration,
-			easing: cubicOut,
-			css: (t) =>
-				`opacity: ${t * opacity}; height: ${t * height}px; padding-top: ${t * paddingTop}px; padding-bottom: ${t * paddingBottom}px; margin-top: ${t * marginTop}px; margin-bottom: ${t * marginBottom}px; overflow: hidden;`
-		};
-	}
-	import { Trash2, Sun, Moon } from '@lucide/svelte';
+	import { fade } from 'svelte/transition';
+	import { X, Sun, Moon, Film, Popcorn } from '@lucide/svelte';
 	import { getTheme, toggleTheme } from '$lib/theme';
 	import type { ActionData, PageData } from './$types';
 
+	const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
+
 	let { data, form }: { data: PageData; form: ActionData } = $props();
-	let titleInput: HTMLInputElement | undefined = $state();
+	let searchQuery = $state('');
+	let searchResults = $state<{ id: number; title: string; poster_path: string | null; release_date: string | null }[]>([]);
+	let searchLoading = $state(false);
+	let searchDebounceTimer: ReturnType<typeof setTimeout>;
 	let popoverOpen = $state(false);
 	let emojiPickerOpen = $state(false);
 	let popoverContainer: HTMLDivElement;
+	let searchContainer: HTMLDivElement;
 	let theme = $state<'light' | 'dark'>(getTheme());
 
 	function handleThemeToggle() {
@@ -55,14 +41,41 @@
 			popoverOpen = false;
 			emojiPickerOpen = false;
 		}
+		if (searchContainer && !searchContainer.contains(e.target as Node)) {
+			searchResults = [];
+		}
 	}
 
 	$effect(() => {
-		if (popoverOpen) {
-			document.addEventListener('click', handleClickOutside);
-			return () => document.removeEventListener('click', handleClickOutside);
+		if (popoverOpen || searchResults.length > 0) {
+			const handler = (e: MouseEvent) => handleClickOutside(e);
+			document.addEventListener('click', handler);
+			return () => document.removeEventListener('click', handler);
 		}
 	});
+
+	async function fetchSearchResults() {
+		const q = searchQuery.trim();
+		if (!q) {
+			searchResults = [];
+			return;
+		}
+		searchLoading = true;
+		try {
+			const res = await fetch(`/api/tmdb/search?q=${encodeURIComponent(q)}`);
+			const json = await res.json();
+			searchResults = json.results ?? [];
+		} catch {
+			searchResults = [];
+		} finally {
+			searchLoading = false;
+		}
+	}
+
+	function onSearchInput() {
+		clearTimeout(searchDebounceTimer);
+		searchDebounceTimer = setTimeout(fetchSearchResults, 300);
+	}
 
 	async function setAvatar(emoji: string) {
 		const formData = new FormData();
@@ -92,29 +105,37 @@
 		await invalidateAll();
 	}
 
-	async function handleAddSubmit(e: SubmitEvent) {
-		e.preventDefault();
-		const formEl = e.target as HTMLFormElement;
-		if (!formEl || !titleInput) return;
+	async function addMovieFromSearch(movie: { title: string; poster_path: string | null }) {
+		const formData = new FormData();
+		formData.set('title', movie.title);
+		if (movie.poster_path) formData.set('poster_path', movie.poster_path);
 
-		const response = await fetch(formEl.action, {
+		const response = await fetch('?/addMovie', {
 			method: 'POST',
-			body: new FormData(formEl)
+			headers: { 'x-sveltekit-action': 'true' },
+			credentials: 'include',
+			body: formData
 		});
-
 		const result = deserialize(await response.text());
 		await applyAction(result);
-
 		if (result.type === 'success' && !result.data?.message) {
 			await invalidateAll();
-			titleInput.value = '';
-			titleInput.focus();
+			searchQuery = '';
+			searchResults = [];
 		}
+	}
+
+	function posterUrl(path: string | null, size: 'w92' | 'w154' = 'w92'): string | undefined {
+		if (!path) return undefined;
+		return `${TMDB_IMAGE_BASE}/${size}${path}`;
 	}
 </script>
 
 <header class="page-header">
-	<h1>Watchlist</h1>
+	<div class="page-title">
+		<Popcorn size={24} class="page-title-icon" />
+		<h1>Watchlist</h1>
+	</div>
 	<div class="header-actions">
 		<button
 			type="button"
@@ -166,22 +187,70 @@
 	</div>
 </header>
 
-<form method="post" action="?/addMovie" onsubmit={handleAddSubmit}>
-	<label for="movie-title">Title</label>
-	<div class="add-movie-row">
-		<input id="movie-title" type="text" name="title" bind:this={titleInput} />
-		<button type="submit">Add</button>
-	</div>
-</form>
+<div class="search-wrap" bind:this={searchContainer}>
+	<input
+		id="movie-search"
+		type="text"
+		placeholder="Search for a movie..."
+		bind:value={searchQuery}
+		oninput={onSearchInput}
+	/>
+	{#if searchLoading}
+		<p class="search-status">Searching...</p>
+	{:else if searchQuery.trim() && !searchLoading}
+		<div class="search-results">
+			{#if searchResults.length === 0}
+				<p class="search-status">No movies found</p>
+			{:else}
+				{#each searchResults as result (result.id)}
+					<button
+						type="button"
+						class="search-result-btn"
+						onclick={() => addMovieFromSearch(result)}
+					>
+						{#if result.poster_path}
+							<img
+								class="search-result-poster"
+								src={posterUrl(result.poster_path, 'w154')}
+								alt=""
+								width="50"
+								height="75"
+							/>
+						{:else}
+							<span class="search-result-poster-placeholder" aria-hidden="true"><Film size={24} /></span>
+						{/if}
+						<span class="search-result-info">
+							<span class="search-result-title">{result.title}</span>
+							{#if result.release_date}
+								<span class="search-result-year">({result.release_date.slice(0, 4)})</span>
+							{/if}
+						</span>
+					</button>
+				{/each}
+			{/if}
+		</div>
+	{/if}
+</div>
 {#if form?.message}
 	<p class="form-message">{form.message}</p>
 {/if}
 
-<ul class="movie-list">
+<ul class="movie-list movie-list-cards">
 	{#each data.movies as m (m.id)}
-		<li out:slideFade={{ duration: 250 }}>
-			<span>{m.title}</span>
-			<button type="button" class="remove-btn" aria-label="Remove {m.title}" onclick={() => removeMovie(m.id)}><Trash2 size={18} /></button>
+		<li class="movie-card" in:fade={{ duration: 250 }} out:fade={{ duration: 250 }}>
+			<div class="movie-card-poster-wrap">
+				{#if m.posterPath}
+					<img
+						class="movie-card-poster"
+						src={posterUrl(m.posterPath, 'w154')}
+						alt=""
+					/>
+				{:else}
+					<span class="movie-card-poster-placeholder" aria-hidden="true"><Film size={32} /></span>
+				{/if}
+				<button type="button" class="remove-btn" aria-label="Remove {m.title}" onclick={() => removeMovie(m.id)}><X size={14} /></button>
+			</div>
+			<span class="movie-card-title">{m.title}</span>
 		</li>
 	{/each}
 </ul>
