@@ -9,6 +9,7 @@
 </script>
 
 <svelte:head>
+	<title>Watchit</title>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 

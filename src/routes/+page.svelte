@@ -150,7 +150,7 @@
 	<header class="page-header">
 		<div class="page-title">
 			<Popcorn size={24} strokeWidth={2.5} class="page-title-icon" />
-			<h1>Watchlist</h1>
+			<h1>Watchit</h1>
 		</div>
 		<div class="header-actions">
 		<button
