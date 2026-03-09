@@ -304,65 +304,73 @@
 	<p class="form-message">{form.message}</p>
 {/if}
 
-<ul class="movie-list movie-list-cards">
-	{#each data.movies as m (m.id)}
-		<li class="movie-card" class:menu-open={openMenuId === m.id} in:fade={{ duration: 120 }} out:fade={{ duration: 120 }}>
-			<div class="movie-card-poster-wrap">
-				{#if m.posterPath}
-					<img
-						class="movie-card-poster"
-						src={posterUrl(m.posterPath, 'w154')}
-						alt=""
-					/>
-				{:else}
-					<span class="movie-card-poster-placeholder" aria-hidden="true"><Film size={32} /></span>
-				{/if}
-				{#if m.watched || m.pinned}
-					<div class="movie-card-poster-badges" aria-hidden="true">
-						{#if m.watched}
-							<span class="movie-card-badge-icon movie-card-badge-icon--watched"><Check size={14} /></span>
-						{/if}
-						{#if m.pinned}
-							<span class="movie-card-badge-icon movie-card-badge-icon--pinned"><Pin size={14} /></span>
-						{/if}
+{#if data.movies.length === 0}
+	<div class="empty-state">
+		<div class="empty-state-icon" aria-hidden="true">👀</div>
+		<p class="empty-state-title">No movies yet</p>
+		<p class="empty-state-text">Start building your watchlist by adding a movie above.</p>
+	</div>
+{:else}
+	<ul class="movie-list movie-list-cards">
+		{#each data.movies as m (m.id)}
+			<li class="movie-card" class:menu-open={openMenuId === m.id} in:fade={{ duration: 120 }} out:fade={{ duration: 120 }}>
+				<div class="movie-card-poster-wrap">
+					{#if m.posterPath}
+						<img
+							class="movie-card-poster"
+							src={posterUrl(m.posterPath, 'w154')}
+							alt=""
+						/>
+					{:else}
+						<span class="movie-card-poster-placeholder" aria-hidden="true"><Film size={32} /></span>
+					{/if}
+					{#if m.watched || m.pinned}
+						<div class="movie-card-poster-badges" aria-hidden="true">
+							{#if m.watched}
+								<span class="movie-card-badge-icon movie-card-badge-icon--watched"><Check size={14} /></span>
+							{/if}
+							{#if m.pinned}
+								<span class="movie-card-badge-icon movie-card-badge-icon--pinned"><Pin size={14} /></span>
+							{/if}
+						</div>
+					{/if}
+					<div class="movie-card-poster-actions" aria-hidden="false">
+						<button
+							type="button"
+							class="movie-card-poster-action-btn"
+							onclick={(e) => {
+								e.stopPropagation();
+								toggleWatched(m.id);
+							}}
+						>
+							{m.watched ? 'Mark unwatched' : 'Mark watched'}
+						</button>
+						<button
+							type="button"
+							class="movie-card-poster-action-btn"
+							onclick={(e) => {
+								e.stopPropagation();
+								togglePin(m.id);
+							}}
+						>
+							{m.pinned ? 'Unpin' : 'Pin'}
+						</button>
+						<button
+							type="button"
+							class="movie-card-poster-action-btn movie-card-poster-action-btn-delete"
+							onclick={(e) => {
+								e.stopPropagation();
+								removeMovie(m.id);
+							}}
+						>
+							Delete
+						</button>
 					</div>
-				{/if}
-				<div class="movie-card-poster-actions" aria-hidden="false">
-					<button
-						type="button"
-						class="movie-card-poster-action-btn"
-						onclick={(e) => {
-							e.stopPropagation();
-							toggleWatched(m.id);
-						}}
-					>
-						{m.watched ? 'Mark unwatched' : 'Mark watched'}
-					</button>
-					<button
-						type="button"
-						class="movie-card-poster-action-btn"
-						onclick={(e) => {
-							e.stopPropagation();
-							togglePin(m.id);
-						}}
-					>
-						{m.pinned ? 'Unpin' : 'Pin'}
-					</button>
-					<button
-						type="button"
-						class="movie-card-poster-action-btn movie-card-poster-action-btn-delete"
-						onclick={(e) => {
-							e.stopPropagation();
-							removeMovie(m.id);
-						}}
-					>
-						Delete
-					</button>
 				</div>
-			</div>
-			<div class="movie-card-title-row">
-				<span class="movie-card-title">{m.title}</span>
-			</div>
-		</li>
-	{/each}
-</ul>
+				<div class="movie-card-title-row">
+					<span class="movie-card-title">{m.title}</span>
+				</div>
+			</li>
+		{/each}
+	</ul>
+{/if}
