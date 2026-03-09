@@ -655,7 +655,7 @@ ul {
 	gap: 0.25rem;
 }
 
-/* Static top-right badges (non-interactive) */
+/* Top-right badges*/
 .movie-list-cards .movie-card-badge-icon {
 	display: inline-flex;
 	align-items: center;
@@ -1061,7 +1061,7 @@ li:last-child {
 	justify-content: center;
 	width: 5.5rem;
 	height: 5.5rem;
-	border-radius: 999px;
+	border-radius: 999rem;
 	background: var(--color-avatar-bg);
 	color: var(--color-accent-soft);
 	margin-bottom: 0.25rem;
