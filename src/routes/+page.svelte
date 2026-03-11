@@ -6,7 +6,7 @@
 	import { getTheme, toggleTheme } from '$lib/theme';
 	import type { ActionData, PageData } from './$types';
 
-	const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let searchQuery = $state('');
@@ -179,7 +179,10 @@
 		}
 	}
 
-	function posterUrl(path: string | null, size: 'w92' | 'w154' = 'w92'): string | undefined {
+function posterUrl(
+	path: string | null,
+	size: 'w92' | 'w154' | 'w342' | 'w500' | 'original' = 'w92'
+): string | undefined {
 		if (!path) return undefined;
 		return `${TMDB_IMAGE_BASE}/${size}${path}`;
 	}
@@ -318,7 +321,8 @@
 					{#if m.posterPath}
 						<img
 							class="movie-card-poster"
-							src={posterUrl(m.posterPath, 'w154')}
+							src={posterUrl(m.posterPath, 'w342')}
+							srcset={`${posterUrl(m.posterPath, 'w342')} 1x, ${posterUrl(m.posterPath, 'w500')} 2x`}
 							alt=""
 						/>
 					{:else}

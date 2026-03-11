@@ -10,7 +10,10 @@ export interface TMDBMovieResult {
 	release_date: string | null;
 }
 
-export function posterUrl(path: string | null, size: 'w92' | 'w154' = 'w92'): string | undefined {
+export function posterUrl(
+	path: string | null,
+	size: 'w92' | 'w154' | 'w342' | 'w500' | 'original' = 'w92'
+): string | undefined {
 	if (!path) return undefined;
 	return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
